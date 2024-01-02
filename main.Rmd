@@ -1,0 +1,70 @@
+---
+title: "Exercise Prediction Report"
+output: html_document
+---
+
+# Data Loading and Exploration
+
+```{r setup, include=FALSE}
+# Load libraries
+library(tidyverse)
+library(caret)
+library(randomForest)
+
+# Load datasets
+training <- read.csv("pml-training.csv", na.strings = c("NA", ""))
+testing <- read.csv("pml-testing.csv", na.strings = c("NA", ""))
+```
+
+# Data Cleaning
+
+```{r}
+# Remove columns with missing values
+training <- training[, colSums(is.na(training)) == 0]
+testing <- testing[, colSums(is.na(testing)) == 0]
+
+# Remove unnecessary columns
+trainData <- training[, -c(1:7)]
+testData <- testing[, -c(1:7)]
+```
+
+# Data Preprocessing
+
+```{r}
+# Create training and validation sets
+set.seed(7826)
+inTrain <- createDataPartition(trainData$classe, p = 0.7, list = FALSE)
+train <- trainData[inTrain, ]
+valid <- trainData[-inTrain, ]
+```
+
+# Model Building
+
+```{r}
+# Train a decision tree model
+control <- trainControl(method = "cv", number = 5)
+fit_rpart <- train(classe ~ ., data = train, method = "rpart", trControl = control)
+print(fit_rpart, digits = 4)
+
+# Train a random forest model
+fit_rf <- train(classe ~ ., data = train, method = "rf", trControl = control)
+print(fit_rf, digits = 4)
+```
+
+# Model Evaluation
+
+```{r}
+# Predict outcomes using the validation set
+predict_rf <- predict(fit_rf, valid)
+
+# Show prediction result
+conf_rf <- confusionMatrix(as.factor(valid$classe), predict_rf)
+(accuracy_rf <- conf_rf$overall[1])
+```
+
+# Predicting 20 Test Cases
+
+```{r}
+# Predict the class labels for 20 test cases
+(predict(fit_rf, testData))
+```
